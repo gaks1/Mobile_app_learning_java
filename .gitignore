@@ -1,0 +1,48 @@
+# Built application packages
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java/Kotlin class and build files
+*.class
+bin/
+gen/
+out/
+.gradle/
+build/
+.kotlin/
+
+# Local configuration file (SDK paths, local machine properties)
+local.properties
+
+# Signatures & Keystores (Security)
+*.jks
+*.keystore
+signing.properties
+
+# Google / Firebase Services (Uncomment if you use them and want to keep them private)
+# google-services.json
+
+# Log Files
+*.log
+
+# Android Studio / IntelliJ files
+*.iml
+.idea/
+!.idea/codeStyles/
+!.idea/scopes/
+!.idea/vcs.xml
+
+# Android Studio specifics
+captures/
+.externalNativeBuild/
+.cxx/
+output-metadata.json
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
