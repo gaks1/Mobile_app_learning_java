@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     EditText[] quantities = new EditText[5];
     TextView[] totals = new TextView[5];
 
-    Button GrandTotalButton;
+    Button GrandTotalButton, ReceiptButton;
     TextView GrandTotal;
 
     HashMap<String, Double> items = new HashMap<>();
@@ -74,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
         GrandTotalButton = findViewById(R.id.button);
         GrandTotal = findViewById(R.id.textView6);
 
+        ReceiptButton = findViewById(R.id.button2);
+
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, itemsList);
         adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
 
@@ -87,17 +89,62 @@ public class MainActivity extends AppCompatActivity {
                     String selected = itemsList[position];
                     double price = items.get(selected);
                     unitPrices[index].setText(String.format(Locale.US, "%.2f", price));
-//                    calculateRowTotal(index);
+                    calculateRowTotal(index);
                 }
 
                 @Override
                 public void onNothingSelected(AdapterView<?> parent) {}
             });
+
+            final int qtyIndex = i;
+            quantities[i].addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    calculateRowTotal(qtyIndex);
+                }
+            });
         }
+
+        GrandTotalButton.setOnClickListener(v -> calculateGrandTotal());
+
             ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    public void calculateRowTotal(int index){
+        double unitPrice = parseOrDefault(unitPrices[index].getText().toString(), 0.00);
+        double quantity = parseOrDefault(quantities[index].getText().toString(), 0.00);
+
+        double total = unitPrice * quantity;
+        totals[index].setText(String.format(Locale.US, "%.2f", total));
+    }
+
+    public void calculateGrandTotal (){
+        double total = 0.00;
+        for( int i = 0; i < 5 ; i++){
+            double pricetotal = parseOrDefault(totals[i].getText().toString(), 0.00);
+            total += pricetotal;
+        }
+        GrandTotal.setText(String.format(Locale.US, "%.2f", total));
+    }
+
+    public double parseOrDefault (String text, Double nodefaults){
+        if( text == null || text.isEmpty()){
+            return nodefaults;
+        }
+        try {
+            return Double.parseDouble(text);
+        }catch(NumberFormatException e){
+            return nodefaults;
+        }
     }
 }
