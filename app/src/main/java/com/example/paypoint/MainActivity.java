@@ -152,14 +152,15 @@ public class MainActivity extends AppCompatActivity {
                 continue;
             }
             String name = spinners[i].getSelectedItem().toString();
+            double unitPrice = items.get(name);
             if (name.equals("Select items")){
                 continue;
             }
             double rowTotal = parseOrDefault(totals[i].getText().toString(), 0.00);
             atotal += rowTotal;
-            receipt += (int) quantity + " x " + name + "   " + rowTotal + "\n";
+            receipt += (int) quantity + " x " + name + " " + "at "+ unitPrice + " each ---> " +  rowTotal + "\n";
         }
-        receipt += "Total = " + atotal + "\n";
+        receipt += "Total ===== " + atotal + "\n";
         return receipt;
     }
     public double parseOrDefault (String text, Double nodefaults){
