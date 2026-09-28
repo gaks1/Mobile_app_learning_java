@@ -1,4 +1,5 @@
 package com.example.paypoint;
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
@@ -112,6 +113,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         GrandTotalButton.setOnClickListener(v -> calculateGrandTotal());
+        ReceiptButton.setOnClickListener(v ->{
+            Intent intent = new Intent(this, MainActivity2.class);
+            intent.putExtra( "Receipt", buildReceipt() );
+            startActivity(intent);
+        });
 
             ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -137,6 +143,25 @@ public class MainActivity extends AppCompatActivity {
         GrandTotal.setText(String.format(Locale.US, "%.2f", total));
     }
 
+    public String buildReceipt(){
+        String receipt = "";
+        double atotal = 0.00;
+        for(int i = 0; i < 5; i++) {
+            double quantity = parseOrDefault(quantities[i].getText().toString(), 0.00);
+            if (quantity <= 0) {
+                continue;
+            }
+            String name = spinners[i].getSelectedItem().toString();
+            if (name.equals("Select items")){
+                continue;
+            }
+            double rowTotal = parseOrDefault(totals[i].getText().toString(), 0.00);
+            atotal += rowTotal;
+            receipt += (int) quantity + " x " + name + "   " + rowTotal + "\n";
+        }
+        receipt += "Total = " + atotal + "\n";
+        return receipt;
+    }
     public double parseOrDefault (String text, Double nodefaults){
         if( text == null || text.isEmpty()){
             return nodefaults;
