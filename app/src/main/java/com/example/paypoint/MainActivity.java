@@ -15,25 +15,27 @@ import  android.widget.TextView;
 import  android.view.View;
 import  android.widget.ArrayAdapter;
 import  android.widget.AdapterView;
-import  android.text.Editable;
-import  android.text.TextWatcher;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
-    Spinner[] spinners = new Spinner[5];
-    TextView[] unitPrices = new TextView[5];
-    EditText[] quantities = new EditText[5];
-    TextView[] totals = new TextView[5];
+    Spinner spinner;
+    TextView tvUnitPrice;
+    EditText etQty;
 
-    Button GrandTotalButton, ReceiptButton;
-    TextView GrandTotal;
+    Button btnAdd, GrandTotalButton, ReceiptButton;
+    TextView tvReceipt, GrandTotal;
 
     HashMap<String, Double> items = new HashMap<>();
     String[] itemsList = { "Select items", "Apples", "Milk", "Bread", "Eggs", "Cheese" };
 
-
+    // Running list of everything the user has added. Each line is stored as a
+    // formatted row string so we can render it in tvReceipt and reuse it for the receipt.
+    List<String> addedLines = new ArrayList<>();
+    double runningTotal = 0.00;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,69 +50,34 @@ public class MainActivity extends AppCompatActivity {
         items.put("Eggs", 2.00);
         items.put("Cheese", 3.00);
 
-        spinners[0] = findViewById(R.id.spinner1);
-        spinners[1] = findViewById(R.id.spinner2);
-        spinners[2] = findViewById(R.id.spinner3);
-        spinners[3] = findViewById(R.id.spinner4);
-        spinners[4] = findViewById(R.id.spinner5);
+        spinner = findViewById(R.id.spinner1);
+        tvUnitPrice = findViewById(R.id.tvUnitPrice1);
+        etQty = findViewById(R.id.etQty1);
 
-        unitPrices[0] = findViewById(R.id.tvUnitPrice1);
-        unitPrices[1] = findViewById(R.id.tvUnitPrice2);
-        unitPrices[2] = findViewById(R.id.tvUnitPrice3);
-        unitPrices[3] = findViewById(R.id.tvUnitPrice4);
-        unitPrices[4] = findViewById(R.id.tvUnitPrice5);
-
-        quantities[0] = findViewById(R.id.etQty1);
-        quantities[1] = findViewById(R.id.etQty2);
-        quantities[2] = findViewById(R.id.etQty3);
-        quantities[3] = findViewById(R.id.etQty4);
-        quantities[4] = findViewById(R.id.etQty5);
-
-        totals[0] = findViewById(R.id.tvTotal1);
-        totals[1] = findViewById(R.id.tvTotal2);
-        totals[2] = findViewById(R.id.tvTotal3);
-        totals[3] = findViewById(R.id.tvTotal4);
-        totals[4] = findViewById(R.id.tvTotal5);
-
+        btnAdd = findViewById(R.id.btnAdd);
         GrandTotalButton = findViewById(R.id.button);
         GrandTotal = findViewById(R.id.textView6);
+        tvReceipt = findViewById(R.id.tvReceipt);
 
         ReceiptButton = findViewById(R.id.button2);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, itemsList);
         adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        spinner.setAdapter(adapter);
 
-        for (int i = 0; i < 5 ; i++){
-            spinners[i].setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id){
+                String selected = itemsList[position];
+                double price = items.get(selected);
+                tvUnitPrice.setText(String.format(Locale.US, "%.2f", price));
+            }
 
-            final int index = i;
-            spinners[i].setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id){
-                    String selected = itemsList[position];
-                    double price = items.get(selected);
-                    unitPrices[index].setText(String.format(Locale.US, "%.2f", price));
-                    calculateRowTotal(index);
-                }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
 
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {}
-            });
-
-            final int qtyIndex = i;
-            quantities[i].addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-                @Override
-                public void afterTextChanged(Editable s) {
-                    calculateRowTotal(qtyIndex);
-                }
-            });
-        }
+        btnAdd.setOnClickListener(v -> addCurrentItem());
 
         GrandTotalButton.setOnClickListener(v -> calculateGrandTotal());
         ReceiptButton.setOnClickListener(v ->{
@@ -126,42 +93,71 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void calculateRowTotal(int index){
-        double unitPrice = parseOrDefault(unitPrices[index].getText().toString(), 0.00);
-        double quantity = parseOrDefault(quantities[index].getText().toString(), 0.00);
+    // Reads the current spinner + quantity, appends it to the running list at
+    // the bottom, then resets the inputs for the next entry.
+    public void addCurrentItem(){
+        String name = spinner.getSelectedItem().toString();
+        if (name.equals("Select items")) {
+            return;
+        }
 
-        double total = unitPrice * quantity;
-        totals[index].setText(String.format(Locale.US, "%.2f", total));
+        double quantity = parseOrDefault(etQty.getText().toString(), 0.00);
+        if (quantity <= 0) {
+            return;
+        }
+
+        double unitPrice = items.get(name);
+        double rowTotal = unitPrice * quantity;
+        runningTotal += rowTotal;
+
+        // Fixed-width columns align because tvReceipt uses a monospace font.
+        addedLines.add(String.format(Locale.US, "%-12s %3d x %6.2f %8.2f%n",
+                name, (int) quantity, unitPrice, rowTotal));
+
+        refreshReceiptList();
+        calculateGrandTotal();
+
+        // Reset the row so the next item can be entered.
+        spinner.setSelection(0);
+        etQty.setText("0");
+    }
+
+    // Renders every added line into the bottom TextView.
+    public void refreshReceiptList(){
+        StringBuilder sb = new StringBuilder();
+        for (String added : addedLines) {
+            sb.append(added);
+        }
+        tvReceipt.setText(sb.toString());
     }
 
     public void calculateGrandTotal (){
-        double total = 0.00;
-        for( int i = 0; i < 5 ; i++){
-            double pricetotal = parseOrDefault(totals[i].getText().toString(), 0.00);
-            total += pricetotal;
-        }
-        GrandTotal.setText(String.format(Locale.US, "%.2f", total));
+        GrandTotal.setText(String.format(Locale.US, "%.2f", runningTotal));
     }
 
     public String buildReceipt(){
-        String receipt = "";
-        double atotal = 0.00;
-        for(int i = 0; i < 5; i++) {
-            double quantity = parseOrDefault(quantities[i].getText().toString(), 0.00);
-            if (quantity <= 0) {
-                continue;
-            }
-            String name = spinners[i].getSelectedItem().toString();
-            double unitPrice = items.get(name);
-            if (name.equals("Select items")){
-                continue;
-            }
-            double rowTotal = parseOrDefault(totals[i].getText().toString(), 0.00);
-            atotal += rowTotal;
-            receipt += (int) quantity + " x " + name + " " + "at "+ unitPrice + " each ---> " +  rowTotal + "\n";
+        String line = "------------------------------------------\n";
+        String divider = "==========================================\n";
+
+        // Header, centred-ish. Pad the title so it sits toward the middle of the 42-char width.
+        StringBuilder receipt = new StringBuilder();
+        receipt.append(line);
+        receipt.append(String.format(Locale.US, "%28s%n", "MIAMI SUPERMARKET"));
+        receipt.append(String.format(Locale.US, "%26s%n", "STORE RECEIPT"));
+        receipt.append(line);
+        receipt.append(String.format(Locale.US, "%-18s %4s %8s %9s%n", "ITEM", "QTY", "PRICE", "TOTAL"));
+        receipt.append(line);
+
+        for (String added : addedLines) {
+            receipt.append(added);
         }
-        receipt += "Total ===== " + atotal + "\n";
-        return receipt;
+
+        receipt.append(line);
+        receipt.append(String.format(Locale.US, "%-32s %9.2f%n", "TOTAL", runningTotal));
+        receipt.append(divider);
+        receipt.append(String.format(Locale.US, "%26s%n", "THANK YOU!"));
+        receipt.append(line);
+        return receipt.toString();
     }
     public double parseOrDefault (String text, Double nodefaults){
         if( text == null || text.isEmpty()){
