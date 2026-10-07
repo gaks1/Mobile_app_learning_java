@@ -32,8 +32,6 @@ public class MainActivity extends AppCompatActivity {
     HashMap<String, Double> items = new HashMap<>();
     String[] itemsList = { "Select items", "Apples", "Milk", "Bread", "Eggs", "Cheese" };
 
-    // Running list of everything the user has added. Each line is stored as a
-    // formatted row string so we can render it in tvReceipt and reuse it for the receipt.
     List<String> addedLines = new ArrayList<>();
     double runningTotal = 0.00;
 
@@ -93,8 +91,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // Reads the current spinner + quantity, appends it to the running list at
-    // the bottom, then resets the inputs for the next entry.
     public void addCurrentItem(){
         String name = spinner.getSelectedItem().toString();
         if (name.equals("Select items")) {
@@ -110,19 +106,16 @@ public class MainActivity extends AppCompatActivity {
         double rowTotal = unitPrice * quantity;
         runningTotal += rowTotal;
 
-        // Fixed-width columns align because tvReceipt uses a monospace font.
         addedLines.add(String.format(Locale.US, "%-12s %3d x %6.2f %8.2f%n",
                 name, (int) quantity, unitPrice, rowTotal));
 
         refreshReceiptList();
         calculateGrandTotal();
 
-        // Reset the row so the next item can be entered.
         spinner.setSelection(0);
         etQty.setText("0");
     }
 
-    // Renders every added line into the bottom TextView.
     public void refreshReceiptList(){
         StringBuilder sb = new StringBuilder();
         for (String added : addedLines) {
@@ -139,7 +132,6 @@ public class MainActivity extends AppCompatActivity {
         String line = "------------------------------------------\n";
         String divider = "==========================================\n";
 
-        // Header, centred-ish. Pad the title so it sits toward the middle of the 42-char width.
         StringBuilder receipt = new StringBuilder();
         receipt.append(line);
         receipt.append(String.format(Locale.US, "%28s%n", "MIAMI SUPERMARKET"));
