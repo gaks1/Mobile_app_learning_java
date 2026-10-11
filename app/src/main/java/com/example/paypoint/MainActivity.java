@@ -9,28 +9,24 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import  android.widget.Button;
-import  android.widget.EditText;
 import  android.widget.Spinner;
 import  android.widget.TextView;
-import  android.view.View;
 import  android.widget.ArrayAdapter;
-import  android.widget.AdapterView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
-    Spinner spinner;
-    TextView tvUnitPrice;
-    EditText etQty;
+    Spinner itemSpinner, priceSpinner, qtySpinner;
 
     Button btnAdd, GrandTotalButton, ReceiptButton;
     TextView tvReceipt, GrandTotal;
 
-    HashMap<String, Double> items = new HashMap<>();
     String[] itemsList = { "Select items", "Apples", "Milk", "Bread", "Eggs", "Cheese" };
+
+    int[] qtyOptions = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    double[] priceOptions = {0.00, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00 };
 
     List<String> addedLines = new ArrayList<>();
     double runningTotal = 0.00;
@@ -41,16 +37,9 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        items.put("Select items", 0.00);
-        items.put("Apples", 1.00);
-        items.put("Milk", 2.00);
-        items.put("Bread", 1.00);
-        items.put("Eggs", 2.00);
-        items.put("Cheese", 3.00);
-
-        spinner = findViewById(R.id.spinner1);
-        tvUnitPrice = findViewById(R.id.tvUnitPrice1);
-        etQty = findViewById(R.id.etQty1);
+        itemSpinner = findViewById(R.id.spinner1);
+        priceSpinner = findViewById(R.id.spinnerPrice);
+        qtySpinner = findViewById(R.id.spinnerQty);
 
         btnAdd = findViewById(R.id.btnAdd);
         GrandTotalButton = findViewById(R.id.button);
@@ -59,21 +48,28 @@ public class MainActivity extends AppCompatActivity {
 
         ReceiptButton = findViewById(R.id.button2);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, itemsList);
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        spinner.setAdapter(adapter);
+        // Item spinner
+        ArrayAdapter<String> itemAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, itemsList);
+        itemAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        itemSpinner.setAdapter(itemAdapter);
 
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id){
-                String selected = itemsList[position];
-                double price = items.get(selected);
-                tvUnitPrice.setText(String.format(Locale.US, "%.2f", price));
-            }
+        // Quantity spinner (1..10)
+        List<String> qtyList = new ArrayList<>();
+        for (int q : qtyOptions) {
+            qtyList.add(String.valueOf(q));
+        }
+        ArrayAdapter<String> qtyAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, qtyList);
+        qtyAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        qtySpinner.setAdapter(qtyAdapter);
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+        // Price spinner (0.50..4.00) - same options for every item
+        List<String> priceList = new ArrayList<>();
+        for (double p : priceOptions) {
+            priceList.add(String.format(Locale.US, "%.2f", p));
+        }
+        ArrayAdapter<String> priceAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, priceList);
+        priceAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        priceSpinner.setAdapter(priceAdapter);
 
         btnAdd.setOnClickListener(v -> addCurrentItem());
 
@@ -92,28 +88,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void addCurrentItem(){
-        String name = spinner.getSelectedItem().toString();
+        String name = itemSpinner.getSelectedItem().toString();
         if (name.equals("Select items")) {
             return;
         }
 
-        double quantity = parseOrDefault(etQty.getText().toString(), 0.00);
+        int quantity = Integer.parseInt(qtySpinner.getSelectedItem().toString());
         if (quantity <= 0) {
             return;
         }
 
-        double unitPrice = items.get(name);
+        double unitPrice = parseOrDefault(priceSpinner.getSelectedItem().toString(), 0.00);
         double rowTotal = unitPrice * quantity;
         runningTotal += rowTotal;
 
         addedLines.add(String.format(Locale.US, "%-12s %3d x %6.2f %8.2f%n",
-                name, (int) quantity, unitPrice, rowTotal));
+                name, quantity, unitPrice, rowTotal));
 
         refreshReceiptList();
         calculateGrandTotal();
 
-        spinner.setSelection(0);
-        etQty.setText("0");
+        itemSpinner.setSelection(0);
+        qtySpinner.setSelection(0);
     }
 
     public void refreshReceiptList(){
