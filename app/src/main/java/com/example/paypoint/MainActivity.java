@@ -98,6 +98,12 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        double price = parseOrDefault(priceSpinner.getSelectedItem().toString(), 0.00);
+        if (price <= 0.00) {
+            return;
+        }
+
+
         double unitPrice = parseOrDefault(priceSpinner.getSelectedItem().toString(), 0.00);
         double rowTotal = unitPrice * quantity;
         runningTotal += rowTotal;
